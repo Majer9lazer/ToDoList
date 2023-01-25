@@ -1,0 +1,229 @@
+﻿@{
+    ViewData["Title"] = "ToDo List";
+}
+
+<div id="indexMainBlock">
+    <input type="hidden" :value="user.visitorId" id="visitorId" />
+    <div class="container">
+
+        <header class="mb-5">
+            <h3 class="display-4">ToDoItems</h3>
+        </header>
+        <form class="row row-cols-lg-auto align-items-center">
+            <div class="col-12">
+                <label class="visually-hidden" for="inlineFormInputGroupUsername">Create tea</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="inlineFormInputGroupUsername"
+                           v-model="toDoItem.text"
+                           placeholder="Create tea">
+                </div>
+            </div>
+            <div class="col-12">
+                <input type="date" class="btn btn-outline-primary" v-model="toDoItem.creationDate">
+            </div>
+            <div class="col-12">
+                <button type="button"
+                        @@click="createToDoItem"
+                        :class="addToDoItemButtonClass">
+                    Add
+                </button>
+            </div>
+        </form>
+
+        <div class="row col-4 mt-5">
+            <div>
+                <div class="accordion" id="accordionPanelsStayOpenExample">
+                    <div class="accordion-item" v-for="(groupedToDoItemCollection, key) in groupedToDoItems">
+                        <h2 class="accordion-header" id="panelsStayOpen-headingOne">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseOne" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne">
+                                {{key}}
+                            </button>
+                        </h2>
+                        <div id="panelsStayOpen-collapseOne" class="accordion-collapse collapse show" aria-labelledby="panelsStayOpen-headingOne">
+                            <div class="accordion-body">
+                                <!-- CHECKBOX LIST -->
+                                <div class="card rounded border-0 shadow-sm position-relative">
+                                    <div class="card-body ">
+                                        <div class="d-flex align-items-center mb-4 pb-4 border-bottom">
+                                            <i class="far fa-calendar-alt fa-3x"></i>
+                                            <div class="ms-3">
+                                                <h4 class="text-uppercase fw-weight-bold mb-0">{{dayOfTheDate(key)}}</h4>
+                                                <p class="text-gray fst-italic mb-0">{{key}}</p>
+                                            </div>
+                                        </div>
+                                        <div class="form-check mb-3" v-for="toDoItem in groupedToDoItemCollection">
+                                            <input class="form-check-input"
+                                                   id="flexCheck1" type="checkbox"
+                                                   v-model="toDoItem.isFinished"
+                                                   @@input="finishToDoItem(toDoItem)">
+                                            <label class="form-check-label" for="flexCheck1">
+                                                <span class="fst-italic pl-1">{{toDoItem.text}}</span>
+                                            </label>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts
+    {
+    <script>
+        // Initialize the agent at application startup.
+        const fpPromise = import('https://openfpcdn.io/fingerprintjs/v3')
+            .then(fingerprintJs => fingerprintJs.load());
+
+        // Get the visitor identifier when you need it.
+        var fpPromiseResult = fpPromise
+            .then(fp => fp.get())
+            .then(result => {
+                return result;
+
+            });
+    </script>
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    message: 'Hello Vue!',
+                    image: '',
+                    user: {},
+                    toDoItems: [],
+                    toDoItem: {
+                        text: 'Fix problems',
+                        creationDate: '2023-01-25',
+                        updateDate: '',
+                        isDeleted: false,
+                        isFinished: false,
+                        user: {}
+                    },
+
+                    days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+                }
+            },
+            methods: {
+                createToDoItem: async function () {
+                    var addToDoItemResponse = await window.fetch(`api/ToDoItems`,
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json;charset=utf-8'
+                            },
+                            body: JSON.stringify(
+                                {
+                                    text: this.toDoItem.text,
+                                    creationDate: this.toDoItem.creationDate,
+                                    isDeleted: this.toDoItem.isDeleted,
+                                    isFinished: this.toDoItem.isFinished,
+                                    user: {
+                                        visitorId: this.toDoItem.user.visitorId
+                                    }
+                                },
+                            )
+                        });
+                    if (addToDoItemResponse.ok) {
+                        console.log(this.toDoItem);
+                        this.toDoItems.push({
+                            text: this.toDoItem.text,
+                            creationDate: this.toDoItem.creationDate,
+                            updateDate: this.toDoItem.updateDate,
+                            isDeleted: this.toDoItem.isDeleted,
+                            isFinished: this.toDoItem.isFinished,
+                            user: this.toDoItem.user
+                        });
+                        this.toDoItem.text = '';
+
+                    } else {
+                        alert('Error while adding todo item');
+                    }
+                },
+                updateToDoItem: function () {
+
+                },
+                deleteToDoItem: function () {
+
+                },
+                finishToDoItem: function (toDoItem) {
+                    console.log(toDoItem);
+                },
+                createUserIfNecessary: async function (fingerprintRes) {
+                    var response = await window.fetch(`api/users/${this.visitorId}`);
+                    var user;
+                    if (response.status === 404) {
+                        user = { visitorId: fingerprintRes.visitorId };
+
+                        var addResponse = await window.fetch(`api/users`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json;charset=utf-8'
+                                },
+                                body: JSON.stringify(user)
+                            });
+
+                        if (!addResponse.ok) {
+                            alert('error when creating user');
+                        }
+                    } else {
+                        user = await response.json();
+                        console.log(user);
+                        this.user = user;
+                        this.toDoItems = user.toDoItems;
+                    }
+                    this.toDoItem.user = user;
+                },
+                dayOfTheDate: function (date) {
+                    return this.days[new Date(date).getDay()];
+
+                }
+            },
+            mounted: async function () {
+                fpPromiseResult.then(async (res) => {
+                    this.visitorId = res.visitorId;
+                    await this.createUserIfNecessary(res);
+                });
+            },
+            computed: {
+                groupedToDoItems: function () {
+                    if (this.toDoItems.length > 0) {
+                        var res = groupBy(this.toDoItems, 'creationDate');
+                        console.log(res);
+                        return res;
+                    } else {
+                        return [];
+                    }
+                },
+                addToDoItemButtonClass: function () {
+                    if (this.toDoItem.text.length <= 0) {
+                        return 'btn btn-primary disabled';
+                    } else {
+                        return 'btn btn-primary';
+                    }
+                }
+            }
+        }).mount('#indexMainBlock');
+
+        var groupBy = function (xs, key) {
+            return xs.reduce(function (rv, x) {
+                (rv[x[key]] = rv[x[key]] || []).push(x);
+                return rv;
+            },
+                {});
+        };
+
+        var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+
+    </script>
+}
