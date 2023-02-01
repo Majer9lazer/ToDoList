@@ -29,7 +29,7 @@ namespace ToDoList.WEB.Controllers
             {
                 return NotFound();
             }
-            return await _context.ToDoItems.ToListAsync();
+            return await _context.ToDoItems.Where(w => w.IsDeleted == false).ToListAsync();
         }
 
         // GET: api/ToDoItems/5
@@ -60,6 +60,7 @@ namespace ToDoList.WEB.Controllers
                 return BadRequest();
             }
 
+            toDoItem.UpdateDate = DateTime.Now;
             _context.Entry(toDoItem).State = EntityState.Modified;
 
             try

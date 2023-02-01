@@ -38,7 +38,8 @@ namespace ToDoList.WEB.Controllers
         public async Task<ActionResult<User>> GetUser([Required] string visitorId)
         {
             var user = await _context.Users
-                .Include(d => d.ToDoItems)
+                .Include(d => d.ToDoItems.Where(w => w.IsDeleted == false))
+
                 .FirstOrDefaultAsync(f => f.VisitorId == visitorId);
             if (user == null)
             {
